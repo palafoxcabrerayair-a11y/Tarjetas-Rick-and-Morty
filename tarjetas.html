@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Vue -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <title>Tarjetas Rick and Morty</title>
+</head>
+
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4 font-sans text-slate-100">
+
+<div id="app" class="w-full max-w-md">
+
+    <!-- ============================= -->
+    <!-- CARGANDO -->
+    <!-- ============================= -->
+
+    <div
+        v-if="estaCargando"
+        class="bg-slate-800 rounded-2xl shadow-2xl p-6 border border-slate-700 animate-pulse relative mt-16"
+    >
+
+        <div class="w-32 h-32 bg-slate-700 rounded-full mx-auto -mt-20 border-4 border-slate-800"></div>
+
+        <div class="h-8 bg-slate-700 w-3/4 mx-auto rounded mt-6 mb-4"></div>
+
+        <div class="h-4 bg-slate-700 w-1/2 mx-auto rounded mb-6"></div>
+
+        <div class="h-24 bg-slate-700 w-full rounded-xl mb-6"></div>
+
+        <div class="h-12 bg-slate-700 w-full rounded-xl"></div>
+
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- TARJETA DEL PERSONAJE -->
+    <!-- ============================= -->
+
+    <article
+        v-else
+        :class="colorTarjeta"
+        class="rounded-2xl shadow-2xl p-6 border border-white/20 relative mt-16 transition-all duration-500"
+    >
+
+        <!-- Imagen del personaje -->
+
+        <div class="relative w-32 h-32 mx-auto -mt-20">
+
+            <img
+                :src="personaje.image"
+                :alt="personaje.name"
+                class="w-full h-full object-cover rounded-full border-4 border-white/30 shadow-xl"
+            >
+
+        </div>
+
+
+        <!-- ============================= -->
+        <!-- INFORMACIÓN -->
+        <!-- ============================= -->
+
+        <div class="text-center mt-4">
+
+            <h1 class="text-3xl font-black tracking-tight text-white mb-1">
+                {{ personaje.name }}
+            </h1>
+
+
+            <!-- Estado -->
+
+            <div class="flex items-center justify-center gap-2 text-white/80 text-sm font-medium mb-6">
+
+                <span
+                    class="w-3 h-3 rounded-full block"
+                    :class="obtenerColorEstado(personaje.status)"
+                ></span>
+
+                <span>
+                    {{ personaje.status }} - {{ personaje.species }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================= -->
+        <!-- DETALLES -->
+        <!-- ============================= -->
+
+        <div class="bg-black/20 rounded-xl p-4 mb-6 text-sm">
+
+            <div class="mb-3">
+
+                <span class="text-white/60 block text-xs uppercase font-bold tracking-wider mb-1">
+                    Origen
+                </span>
+
+                <p class="text-white">
+                    {{ personaje.origin.name }}
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <span class="text-white/60 block text-xs uppercase font-bold tracking-wider mb-1">
+                    Última Ubicación Conocida
+                </span>
+
+                <p class="text-white">
+                    {{ personaje.location.name }}
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================= -->
+        <!-- ID DEL PERSONAJE -->
+        <!-- ============================= -->
+
+        <div class="mb-4">
+
+            <label class="block text-white/70 text-sm font-bold mb-2">
+                ID del personaje
+            </label>
+
+            <input
+                v-model.number="idPersonaje"
+                type="number"
+                min="1"
+                max="826"
+                placeholder="Ejemplo: 1"
+                class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-white/50"
+                @keyup.enter="buscarPorId"
+            >
+
+        </div>
+
+
+        <!-- ============================= -->
+        <!-- BOTÓN BUSCAR POR ID -->
+        <!-- ============================= -->
+
+        <button
+            @click="buscarPorId"
+            class="w-full bg-white/90 hover:bg-white text-slate-900 font-bold py-3 px-6 rounded-xl transition-all shadow-lg mb-3"
+        >
+            Buscar personaje
+        </button>
+
+
+        <!-- ============================= -->
+        <!-- BOTÓN PERSONAJE ALEATORIO -->
+        <!-- ============================= -->
+
+        <button
+            @click="cambiarColorYPersonaje"
+            class="w-full bg-black/20 hover:bg-black/30 text-white font-bold py-3 px-6 rounded-xl transition-all"
+        >
+            Viajar por el Portal
+        </button>
+
+    </article>
+
+</div>
+
+
+<script>
+
+const {
+    createApp,
+    ref,
+    computed,
+    onMounted
+} = Vue;
+
+
+createApp({
+
+    setup() {
+
+        /* =====================================
+           PERSONAJE
+        ===================================== */
+
+        const personaje = ref(null);
+
+        const estaCargando = ref(true);
+
+
+        /* =====================================
+           ID DEL PERSONAJE
+        ===================================== */
+
+        const idPersonaje = ref(1);
+
+
+        /* =====================================
+           COLORES
+        ===================================== */
+
+        const colores = [
+
+            'bg-teal-700',   // Verde agua
+            'bg-red-900',    // Rojo vino
+            'bg-gray-700',   // Gris
+            'bg-purple-800'  // Morado
+
+        ];
+
+
+        /* =====================================
+           COLOR ACTUAL
+        ===================================== */
+
+        const indiceColor = ref(0);
+
+
+        const colorTarjeta = computed(() => {
+
+            return colores[indiceColor.value];
+
+        });
+
+
+        /* =====================================
+           CAMBIAR COLOR
+        ===================================== */
+
+        const cambiarColor = () => {
+
+            indiceColor.value++;
+
+            if (indiceColor.value >= colores.length) {
+
+                indiceColor.value = 0;
+
+            }
+
+        };
+
+
+        /* =====================================
+           OBTENER PERSONAJE ALEATORIO
+        ===================================== */
+
+        const obtenerPersonaje = async () => {
+
+            estaCargando.value = true;
+
+
+            const idAleatorio =
+                Math.floor(Math.random() * 826) + 1;
+
+
+            idPersonaje.value = idAleatorio;
+
+
+            try {
+
+                const respuesta = await fetch(
+                    `https://rickandmortyapi.com/api/character/${idAleatorio}`
+                );
+
+
+                const datos = await respuesta.json();
+
+
+                personaje.value = datos;
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Fallo dimensional:",
+                    error
+                );
+
+            }
+
+            finally {
+
+                estaCargando.value = false;
+
+            }
+
+        };
+
+
+        /* =====================================
+           BUSCAR POR ID
+        ===================================== */
+
+        const buscarPorId = async () => {
+
+            if (
+                idPersonaje.value < 1 ||
+                idPersonaje.value > 826
+            ) {
+
+                alert("El ID debe estar entre 1 y 826.");
+
+                return;
+
+            }
+
+
+            estaCargando.value = true;
+
+
+            try {
+
+                const respuesta = await fetch(
+                    `https://rickandmortyapi.com/api/character/${idPersonaje.value}`
+                );
+
+
+                if (!respuesta.ok) {
+
+                    throw new Error(
+                        "Personaje no encontrado"
+                    );
+
+                }
+
+
+                const datos = await respuesta.json();
+
+
+                personaje.value = datos;
+
+
+                // Cambiar color cuando se busca
+                // un nuevo personaje
+
+                cambiarColor();
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Fallo dimensional:",
+                    error
+                );
+
+                alert(
+                    "No se encontró el personaje."
+                );
+
+            }
+
+            finally {
+
+                estaCargando.value = false;
+
+            }
+
+        };
+
+
+        /* =====================================
+           CAMBIAR COLOR + PERSONAJE ALEATORIO
+        ===================================== */
+
+        const cambiarColorYPersonaje = () => {
+
+            cambiarColor();
+
+            obtenerPersonaje();
+
+        };
+
+
+        /* =====================================
+           COLOR DEL ESTADO
+        ===================================== */
+
+        const obtenerColorEstado = (status) => {
+
+            if (status === "Alive") {
+
+                return "bg-green-400 shadow-[0_0_10px_rgba(34,197,94,0.8)]";
+
+            }
+
+
+            if (status === "Dead") {
+
+                return "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]";
+
+            }
+
+
+            return "bg-gray-400";
+
+        };
+
+
+        /* =====================================
+           PERSONAJE INICIAL
+        ===================================== */
+
+        onMounted(() => {
+
+            obtenerPersonaje();
+
+        });
+
+
+        /* =====================================
+           RETURN
+        ===================================== */
+
+        return {
+
+            personaje,
+
+            estaCargando,
+
+            idPersonaje,
+
+            colorTarjeta,
+
+            obtenerColorEstado,
+
+            obtenerPersonaje,
+
+            buscarPorId,
+
+            cambiarColorYPersonaje
+
+        };
+
+    }
+
+}).mount("#app");
+
+</script>
+
+</body>
+</html>
